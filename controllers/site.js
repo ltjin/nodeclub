@@ -9,14 +9,14 @@
  * Module dependencies.
  */
 
-var User = require('../proxy').User;
-var Topic = require('../proxy').Topic;
-var config = require('../config');
-var eventproxy = require('eventproxy');
-var cache = require('../common/cache');
-var xmlbuilder = require('xmlbuilder');
+var User         = require('../proxy').User;
+var Topic        = require('../proxy').Topic;
+var config       = require('../config');
+var eventproxy   = require('eventproxy');
+var cache        = require('../common/cache');
+var xmlbuilder   = require('xmlbuilder');
 var renderHelper = require('../common/render_helper');
-var _ = require('lodash');
+var _            = require('lodash');
 
 exports.index = function (req, res, next) {
   var page = parseInt(req.query.page, 10) || 1;
@@ -49,10 +49,7 @@ exports.index = function (req, res, next) {
       proxy.emit('tops', tops);
     } else {
       User.getUsersByQuery(
-        {'$or': [
-          {is_block: {'$exists': false}},
-          {is_block: false}
-        ]},
+        {is_block: false},
         { limit: 10, sort: '-score'},
         proxy.done('tops', function (tops) {
           cache.set('tops', tops, 60 * 1);
@@ -80,13 +77,14 @@ exports.index = function (req, res, next) {
   // END 取0回复的主题
 
   // 取分页数据
-  cache.get('pages', proxy.done(function (pages) {
+  var pagesCacheKey = JSON.stringify(query) + 'pages';
+  cache.get(pagesCacheKey, proxy.done(function (pages) {
     if (pages) {
       proxy.emit('pages', pages);
     } else {
       Topic.getCountByQuery(query, proxy.done(function (all_topics_count) {
         var pages = Math.ceil(all_topics_count / limit);
-        cache.set(JSON.stringify(query) + 'pages', pages, 60 * 1);
+        cache.set(pagesCacheKey, pages, 60 * 1);
         proxy.emit('pages', pages);
       }));
     }
